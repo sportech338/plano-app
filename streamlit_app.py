@@ -100,7 +100,10 @@ fig_pie.update_layout(
     paper_bgcolor="#F4F4F4",  # Fundo da pizza
     plot_bgcolor="#F4F4F4",
     font=dict(color="black")
-)st.plotly_chart(fig_pie, use_container_width=True)
+)
+
+st.plotly_chart(fig_pie, use_container_width=True)
+
 
 # 💰 Simulador de recuperação
 st.subheader("📊 Simulador de Receita Recuperável")
