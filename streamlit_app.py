@@ -47,6 +47,7 @@ col3.metric("🛒 Total de Abandonos", total_abandonos)
 st.divider()
 
 # 📅 Abandonos por dia (bar dynamic)
+st.subheader("📈 Abandonos por Dia")
 abandonos_dia = (
     df_filtrado.groupby(df_filtrado["DATA INICIAL"].dt.date)
     .size()
@@ -60,50 +61,27 @@ fig_bar = px.bar(
     y="Quantidade",
     title="📅 Carrinhos Abandonados por Dia",
     labels={"DATA INICIAL": "Data", "Quantidade": "Total de Abandonos"},
-    color_discrete_sequence=["#02BEE2"],  # Cor da Sportech
-    template="simple_white",
-    text="Quantidade"
+    color_discrete_sequence=["#1f77b4"],
+    template="simple_white"
 )
 
-fig_bar.update_traces(textposition="outside")
-
 fig_bar.update_layout(
-    plot_bgcolor="#F4F4F4",      # Fundo do gráfico
-    paper_bgcolor="#F4F4F4",     # Fundo geral do container
-    font=dict(color="black"),
     xaxis_tickformat="%d/%m",
     xaxis_title=None,
     yaxis_title="Abandonos",
     margin=dict(t=50, b=40, l=0, r=0),
-    height=450
+    height=400
 )
 
-
 st.plotly_chart(fig_bar, use_container_width=True)
-
 
 
 # 🚧 Etapas de abandono (pie dynamic)
 st.subheader("🥧 Distribuição das Etapas de Abandono")
 etapas = df_filtrado["ABANDONOU EM"].value_counts().reset_index()
 etapas.columns = ["Etapa", "Quantidade"]
-fig_pie = px.pie(
-    etapas,
-    names="Etapa",
-    values="Quantidade",
-    title="Etapas onde ocorrem os abandonos",
-    hole=0.4,
-    color_discrete_sequence=px.colors.sequential.Blues  # Ou substitua por lista com tons próximos de #02BEE2
-)
-
-fig_pie.update_layout(
-    paper_bgcolor="#F4F4F4",  # Fundo da pizza
-    plot_bgcolor="#F4F4F4",
-    font=dict(color="black")
-)
-
+fig_pie = px.pie(etapas, names="Etapa", values="Quantidade", title="Etapas onde ocorrem os abandonos", hole=0.4)
 st.plotly_chart(fig_pie, use_container_width=True)
-
 
 # 💰 Simulador de recuperação
 st.subheader("📊 Simulador de Receita Recuperável")
