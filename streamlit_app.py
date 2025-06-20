@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.express as px
 
 st.set_page_config(page_title="Carrinhos Abandonados", layout="wide")
 
-# URL da planilha do Google Sheets exportada como CSV
+# 📥 Google Sheets CSV
 csv_url = "https://docs.google.com/spreadsheets/d/1OBKs2RpmRNqHDn6xE3uMOU-bwwnO_JY1ZhqctZGpA3E/export?format=csv"
 
 @st.cache_data
@@ -17,7 +17,7 @@ def load_data():
 
 df = load_data()
 
-# Filtro de datas
+# 🔍 Filtro de data
 st.sidebar.header("📅 Filtro de Período")
 data_min = df["DATA INICIAL"].min()
 data_max = df["DATA INICIAL"].max()
@@ -32,7 +32,7 @@ data_inicial, data_final = st.sidebar.date_input(
 # Aplica filtro
 df_filtrado = df[(df["DATA INICIAL"] >= pd.to_datetime(data_inicial)) & (df["DATA INICIAL"] <= pd.to_datetime(data_final))]
 
-# KPIs com base no filtro
+# 🎯 KPIs
 valor_total = df_filtrado["VALOR"].sum()
 ticket_medio = df_filtrado["VALOR"].mean()
 total_abandonos = df_filtrado.shape[0]
@@ -46,33 +46,27 @@ col3.metric("🛒 Total de Abandonos", total_abandonos)
 
 st.divider()
 
-# Gráfico de abandonos por dia
-st.subheader("📅 Abandonos por Dia")
-abandonos_dia = df_filtrado.groupby(df_filtrado["DATA INICIAL"].dt.date).size()
-fig, ax = plt.subplots()
-ax.bar(abandonos_dia.index, abandonos_dia.values, color='skyblue')
-ax.set_title("Carrinhos Abandonados por Dia")
-plt.xticks(rotation=45)
-st.pyplot(fig)
+# 📅 Abandonos por dia (bar dynamic)
+st.subheader("📈 Abandonos por Dia")
+abandonos_dia = df_filtrado.groupby(df_filtrado["DATA INICIAL"].dt.date).size().reset_index(name="Quantidade")
+fig_bar = px.bar(abandonos_dia, x="DATA INICIAL", y="Quantidade", title="Carrinhos Abandonados por Dia")
+st.plotly_chart(fig_bar, use_container_width=True)
 
-# Etapas de abandono
-st.subheader("🚧 Etapas de Abandono")
-etapas = df_filtrado["ABANDONOU EM"].value_counts()
-fig2, ax2 = plt.subplots()
-ax2.pie(etapas.values, labels=etapas.index, autopct='%1.1f%%', startangle=90)
-ax2.axis('equal')
-ax2.set_title("Distribuição das Etapas de Abandono")
-st.pyplot(fig2)
+# 🚧 Etapas de abandono (pie dynamic)
+st.subheader("🥧 Distribuição das Etapas de Abandono")
+etapas = df_filtrado["ABANDONOU EM"].value_counts().reset_index()
+etapas.columns = ["Etapa", "Quantidade"]
+fig_pie = px.pie(etapas, names="Etapa", values="Quantidade", title="Etapas onde ocorrem os abandonos", hole=0.4)
+st.plotly_chart(fig_pie, use_container_width=True)
 
-# Simulador de recuperação
-st.subheader("💰 Simulação de Receita Recuperável")
+# 💰 Simulador de recuperação
+st.subheader("📊 Simulador de Receita Recuperável")
 meta = st.slider("Taxa de recuperação esperada (%)", 0, 100, 25, step=5)
 valor_recuperado = valor_total * (meta / 100)
-
 st.success(f"🔄 Recuperando {meta}% → **R$ {valor_recuperado:,.2f}**")
 
-# Estratégia
-st.subheader("🎯 Perguntas Estratégicas")
+# 🎯 Perguntas estratégicas
+st.subheader("🧠 Perguntas Estratégicas para o Time de Marketing")
 st.markdown("""
 1. **Qual etapa está gerando mais perda de receita?**  
 2. **Estamos priorizando os carrinhos de maior valor?**  
