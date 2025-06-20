@@ -64,3 +64,11 @@ st.subheader("📊 Simulador de Receita Recuperável")
 meta = st.slider("Taxa de recuperação esperada (%)", 0, 100, 25, step=5)
 valor_recuperado = valor_total * (meta / 100)
 st.success(f"🔄 Recuperando {meta}% → **R$ {valor_recuperado:,.2f}**")
+
+# 🎯 Perguntas estratégicas
+st.subheader("🧠 Perguntas Estratégicas para o Time de Marketing")
+st.markdown("""
+1. **Qual etapa está gerando mais perda de receita?**  
+2. **Estamos priorizando os carrinhos de maior valor?**  
+3. **Quais testes A/B podem melhorar o funil?**
+""")
