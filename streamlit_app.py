@@ -48,9 +48,33 @@ st.divider()
 
 # 📅 Abandonos por dia (bar dynamic)
 st.subheader("📈 Abandonos por Dia")
-abandonos_dia = df_filtrado.groupby(df_filtrado["DATA INICIAL"].dt.date).size().reset_index(name="Quantidade")
-fig_bar = px.bar(abandonos_dia, x="DATA INICIAL", y="Quantidade", title="Carrinhos Abandonados por Dia")
+abandonos_dia = (
+    df_filtrado.groupby(df_filtrado["DATA INICIAL"].dt.date)
+    .size()
+    .reset_index(name="Quantidade")
+    .sort_values("DATA INICIAL")
+)
+
+fig_bar = px.bar(
+    abandonos_dia,
+    x="DATA INICIAL",
+    y="Quantidade",
+    title="📅 Carrinhos Abandonados por Dia",
+    labels={"DATA INICIAL": "Data", "Quantidade": "Total de Abandonos"},
+    color_discrete_sequence=["#1f77b4"],
+    template="simple_white"
+)
+
+fig_bar.update_layout(
+    xaxis_tickformat="%d/%m",
+    xaxis_title=None,
+    yaxis_title="Abandonos",
+    margin=dict(t=50, b=40, l=0, r=0),
+    height=400
+)
+
 st.plotly_chart(fig_bar, use_container_width=True)
+
 
 # 🚧 Etapas de abandono (pie dynamic)
 st.subheader("🥧 Distribuição das Etapas de Abandono")
