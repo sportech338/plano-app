@@ -19,7 +19,7 @@ def load_data():
     # 📊 Investimento diário (aba 'Base de dados')
     df_ads = pd.read_csv(csv_base_dados_url, usecols=[0, 1], names=["Data", "Gasto"], header=None, skiprows=1)
     df_ads["Data"] = pd.to_datetime(df_ads["Data"], errors="coerce")
-    df_ads["Investimento"] = df_ads["Gasto"].astype(str).str.replace(",", ".").astype(float)
+    df_ads["Investimento"] = pd.to_numeric(df_ads["Gasto"].astype(str).str.replace(",", "."), errors="coerce")
     df_ads = df_ads[["Data", "Investimento"]].dropna()
 
     return df_abandono, df_ads
