@@ -64,14 +64,17 @@ st.subheader("📅 Abandonos vs Investimento Meta Ads")
 df_filtrado["Data"] = df_filtrado["DATA INICIAL"].dt.date
 df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"]).dt.date
 
+# Agrupamento de abandonos por dia
 abandonos_dia = (
     df_filtrado.groupby("Data")
     .size()
     .reset_index(name="Abandonos")
 )
 
-dados_merged = pd.merge(abandonos_dia, df_ads_filtrado, on="Data", how="left").fillna(0)
+# Merge para combinar abandonos com investimento (preserva todos os dias com investimento)
+dados_merged = pd.merge(df_ads_filtrado, abandonos_dia, on="Data", how="left").fillna({"Abandonos": 0})
 
+# 📊 Gráfico combinado
 fig = px.bar(
     dados_merged, x="Data", y="Abandonos", text="Abandonos",
     labels={"Data": "Data", "Abandonos": "Carrinhos Abandonados"},
@@ -83,10 +86,13 @@ fig.add_scatter(
     x=dados_merged["Data"],
     y=dados_merged["Investimento"],
     name="Investimento (Meta Ads)",
-    mode="lines+markers",
+    mode="lines+markers+text",
+    text=[f"R$ {v:,.2f}" for v in dados_merged["Investimento"]],
+    textposition="top center",
     yaxis="y2"
 )
 
+# Posiciona os textos fora das barras
 for trace in fig.data:
     if trace.type == "bar":
         trace.textposition = "outside"
