@@ -71,19 +71,27 @@ st.divider()
 # 📈 Gráfico: Abandonos por Dia
 st.subheader("📅 Carrinhos Abandonados por Dia")
 
-df_filtrado["DataFormatada"] = df_filtrado["DATA INICIAL"].dt.date
+# Garante consistência: transforma em datetime (sem hora), depois converte para string no formato desejado
+df_filtrado["DataFormatada"] = pd.to_datetime(df_filtrado["DATA INICIAL"].dt.date)
+
+# Agrupa de forma segura
 abandonos_dia = (
     df_filtrado.groupby("DataFormatada")
     .size()
     .reset_index(name="Abandonos")
+    .sort_values("DataFormatada")
 )
 
 fig = px.bar(
-    abandonos_dia, x="DataFormatada", y="Abandonos", text="Abandonos",
+    abandonos_dia,
+    x=abandonos_dia["DataFormatada"].dt.strftime("%d/%m"),
+    y="Abandonos",
+    text="Abandonos",
     labels={"DataFormatada": "Data", "Abandonos": "Carrinhos Abandonados"},
     title="📊 Carrinhos Abandonados por Dia",
     color_discrete_sequence=["#1f77b4"]
 )
+
 
 fig.update_traces(textposition="outside")
 fig.update_layout(
