@@ -139,6 +139,13 @@ fig_invest.update_layout(
 
 st.plotly_chart(fig_invest, use_container_width=True)
 
+
+# 💰 Simulador de recuperação
+st.subheader("📊 Simulador de Receita Recuperável")
+meta = st.slider("Taxa de recuperação esperada (%)", 0, 100, 25, step=5)
+valor_recuperado = valor_total * (meta / 100)
+st.success(f"🔄 Recuperando {meta}% → **R$ {valor_recuperado:,.2f}**")
+
 # 🥧 Etapas de abandono
 st.subheader("🥧 Distribuição das Etapas de Abandono")
 etapas = df_filtrado["ABANDONOU EM"].value_counts().reset_index()
@@ -154,12 +161,6 @@ st.download_button(
     file_name="dados_abandonos_filtrados.csv",
     mime="text/csv"
 )
-
-# 💰 Simulador de recuperação
-st.subheader("📊 Simulador de Receita Recuperável")
-meta = st.slider("Taxa de recuperação esperada (%)", 0, 100, 25, step=5)
-valor_recuperado = valor_total * (meta / 100)
-st.success(f"🔄 Recuperando {meta}% → **R$ {valor_recuperado:,.2f}**")
 
 # 🧠 Reflexão
 st.subheader("🧠 Perguntas Estratégicas para o Time de Marketing")
