@@ -12,13 +12,13 @@ csv_base_dados_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m
 def load_data():
     # 🛒 Carrinhos abandonados
     df_abandono = pd.read_csv(csv_abandono_url)
-    df_abandono["DATA INICIAL"] = pd.to_datetime(df_abandono["DATA INICIAL"], errors="coerce")
+    df_abandono["DATA INICIAL"] = pd.to_datetime(df_abandono["DATA INICIAL"], dayfirst=True, errors="coerce")
     df_abandono["VALOR"] = df_abandono["VALOR"].astype(str).str.replace(",", ".").astype(float)
     df_abandono.dropna(subset=["DATA INICIAL", "VALOR", "ABANDONOU EM"], inplace=True)
 
     # 📊 Investimento diário (aba 'Base de dados')
     df_ads = pd.read_csv(csv_base_dados_url, usecols=[0, 1], names=["Data", "Gasto"], header=None, skiprows=1)
-    df_ads["Data"] = pd.to_datetime(df_ads["Data"], errors="coerce")
+    df_ads["Data"] = pd.to_datetime(df_ads["Data"], dayfirst=True, errors="coerce")
     df_ads["Investimento"] = pd.to_numeric(df_ads["Gasto"].astype(str).str.replace(",", "."), errors="coerce")
     df_ads = df_ads[["Data", "Investimento"]].dropna()
 
@@ -31,12 +31,18 @@ st.sidebar.header("📅 Filtro de Período")
 data_min = df["DATA INICIAL"].min()
 data_max = df["DATA INICIAL"].max()
 
-data_inicial, data_final = st.sidebar.date_input(
+data_range = st.sidebar.date_input(
     "Selecionar intervalo:",
-    [data_min, data_max],
+    value=(data_min, data_max),
     min_value=data_min,
     max_value=data_max
 )
+
+if not isinstance(data_range, tuple) or len(data_range) != 2:
+    st.error("Selecione um intervalo de datas válido.")
+    st.stop()
+
+data_inicial, data_final = data_range
 
 # 🔍 Filtro aplicado
 df_filtrado = df[(df["DATA INICIAL"] >= pd.to_datetime(data_inicial)) & (df["DATA INICIAL"] <= pd.to_datetime(data_final))]
@@ -59,18 +65,15 @@ st.divider()
 # 📈 Abandonos por dia + Investimento
 st.subheader("📅 Abandonos vs Investimento Meta Ads")
 
-# Força Data como datetime.date nas duas tabelas
-df_filtrado["Data"] = df_filtrado["DATA INICIAL"].dt.date
-df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"]).dt.date
+df_filtrado.loc[:, "Data"] = df_filtrado["DATA INICIAL"].dt.date
+df_ads_filtrado.loc[:, "Data"] = pd.to_datetime(df_ads_filtrado["Data"]).dt.date
 
-# Agrupamento de abandonos por dia
 abandonos_dia = (
     df_filtrado.groupby("Data")
     .size()
     .reset_index(name="Abandonos")
 )
 
-# Merge para combinar abandonos com investimento (preserva todos os dias com investimento)
 dados_merged = pd.merge(df_ads_filtrado, abandonos_dia, on="Data", how="left").fillna({"Abandonos": 0})
 
 # 📊 Gráfico combinado
