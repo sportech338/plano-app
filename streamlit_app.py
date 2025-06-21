@@ -6,44 +6,28 @@ st.set_page_config(page_title="Carrinhos Abandonados", layout="wide")
 
 # 📥 Planilhas Google Sheets como CSV
 csv_abandono_url = "https://docs.google.com/spreadsheets/d/1OBKs2RpmRNqHDn6xE3uMOU-bwwnO_JY1ZhqctZGpA3E/export?format=csv"
-csv_investimento_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m5Wq7YaTs3CKPmecLjB3lDyBTI/export?format=csv"
-
-# 🔍 Função para extrair Data + Investimento total da planilha de anúncios
-def extrair_investimento(csv_url):
-    df_raw = pd.read_csv(csv_url, header=None)
-
-    # Data em B2 (linha 1, coluna 1)
-    data_str = df_raw.iloc[1, 1]
-    data = pd.to_datetime(data_str, dayfirst=True, errors="coerce")
-
-    # Busca linha com "TOTAL" na coluna A
-    linha_total = df_raw[df_raw[0].astype(str).str.upper().str.strip() == "TOTAL"]
-    if not linha_total.empty:
-        valor_raw = linha_total.iloc[0, 2]
-        valor = str(valor_raw).replace("R$", "").replace(",", ".").strip()
-        valor_float = float(valor)
-    else:
-        valor_float = 0.0
-
-    return pd.DataFrame({
-        "Data": [data],
-        "Investimento": [valor_float]
-    })
+csv_base_dados_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m5Wq7YaTs3CKPmecLjB3lDyBTI/export?format=csv&gid=0"
 
 @st.cache_data
 def load_data():
+    # 🛒 Carrinhos abandonados
     df_abandono = pd.read_csv(csv_abandono_url)
     df_abandono["DATA INICIAL"] = pd.to_datetime(df_abandono["DATA INICIAL"], errors="coerce")
     df_abandono["VALOR"] = df_abandono["VALOR"].astype(str).str.replace(",", ".").astype(float)
     df_abandono.dropna(subset=["DATA INICIAL", "VALOR", "ABANDONOU EM"], inplace=True)
 
-    df_invest = extrair_investimento(csv_investimento_url)
+    # 📊 Investimento diário (aba 'Base de dados')
+    df_ads = pd.read_csv(csv_base_dados_url)
+    df_ads.columns = ["Data", "Gasto"]
+    df_ads["Data"] = pd.to_datetime(df_ads["Data"], errors="coerce")
+    df_ads["Investimento"] = df_ads["Gasto"].astype(str).str.replace(",", ".").astype(float)
+    df_ads = df_ads[["Data", "Investimento"]].dropna()
 
-    return df_abandono, df_invest
+    return df_abandono, df_ads
 
 df, df_ads = load_data()
 
-# 🔍 Filtro de data
+# 🎯 Filtro de datas
 st.sidebar.header("📅 Filtro de Período")
 data_min = df["DATA INICIAL"].min()
 data_max = df["DATA INICIAL"].max()
@@ -55,7 +39,7 @@ data_inicial, data_final = st.sidebar.date_input(
     max_value=data_max
 )
 
-# 🎯 Aplica filtro
+# 🔍 Filtro aplicado
 df_filtrado = df[(df["DATA INICIAL"] >= pd.to_datetime(data_inicial)) & (df["DATA INICIAL"] <= pd.to_datetime(data_final))]
 df_ads_filtrado = df_ads[(df_ads["Data"] >= pd.to_datetime(data_inicial)) & (df_ads["Data"] <= pd.to_datetime(data_final))]
 
@@ -88,7 +72,6 @@ abandonos_dia = (
 
 dados_merged = pd.merge(abandonos_dia, df_ads_filtrado, on="Data", how="left").fillna(0)
 
-
 fig = px.bar(
     dados_merged, x="Data", y="Abandonos", text="Abandonos",
     labels={"Data": "Data", "Abandonos": "Carrinhos Abandonados"},
@@ -104,10 +87,10 @@ fig.add_scatter(
     yaxis="y2"
 )
 
-# Só aplica "textposition" nos traços do tipo "bar"
 for trace in fig.data:
     if trace.type == "bar":
         trace.textposition = "outside"
+
 fig.update_layout(
     xaxis_tickformat="%d/%m",
     yaxis_title="Abandonos",
