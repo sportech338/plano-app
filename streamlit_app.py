@@ -73,17 +73,21 @@ col3.metric("🛒 Total de Abandonos", total_abandonos)
 
 st.divider()
 
-# 📈 Gráfico: Abandonos por dia + Investimento
+# 📈 Abandonos por dia + Investimento
 st.subheader("📅 Abandonos vs Investimento Meta Ads")
 
+# Força Data como datetime.date nas duas tabelas
+df_filtrado["Data"] = df_filtrado["DATA INICIAL"].dt.date
+df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"]).dt.date
+
 abandonos_dia = (
-    df_filtrado.groupby(df_filtrado["DATA INICIAL"].dt.date)
+    df_filtrado.groupby("Data")
     .size()
     .reset_index(name="Abandonos")
-    .rename(columns={"DATA INICIAL": "Data"})
 )
 
 dados_merged = pd.merge(abandonos_dia, df_ads_filtrado, on="Data", how="left").fillna(0)
+
 
 fig = px.bar(
     dados_merged, x="Data", y="Abandonos", text="Abandonos",
