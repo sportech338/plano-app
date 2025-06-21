@@ -181,17 +181,6 @@ if not df_filtrado.empty:
 else:
     st.warning("Sem dados para o período selecionado.")
 
-with st.expander("💳 Reduzir abandono na etapa de pagamento"):
-    status_pagamento = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_pagamento")
-    st.markdown("""
-    **Plano de Ação:**
-    - Reduzir campos desnecessários no checkout  
-    - Oferecer opções como Pix, boleto, 1-clique  
-    - Inserir selos de segurança visíveis
-    """)
-    st.text_area("💡 Ideias do time:", key="ideia_pagamento")
-    st.info(f"Status atual: {status_pagamento}")
-
 with st.expander("🧾 Melhorar taxa de conclusão na etapa de dados pessoais"):
     status_dados = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_dados")
     st.markdown("""
@@ -202,6 +191,18 @@ with st.expander("🧾 Melhorar taxa de conclusão na etapa de dados pessoais"):
     """)
     st.text_area("💡 Ideias do time:", key="ideia_dados")
     st.info(f"Status atual: {status_dados}")
+
+
+with st.expander("💳 Reduzir abandono na etapa de pagamento"):
+    status_pagamento = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_pagamento")
+    st.markdown("""
+    **Plano de Ação:**
+    - Reduzir campos desnecessários no checkout  
+    - Oferecer opções como Pix, boleto, 1-clique  
+    - Inserir selos de segurança visíveis
+    """)
+    st.text_area("💡 Ideias do time:", key="ideia_pagamento")
+    st.info(f"Status atual: {status_pagamento}")
 
 with st.expander("💰 Aumentar ticket médio com combos"):
     status_combos = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_combos")
