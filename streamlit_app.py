@@ -105,14 +105,6 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-# 🥧 Etapas de abandono
-st.subheader("🥧 Distribuição das Etapas de Abandono")
-etapas = df_filtrado["ABANDONOU EM"].value_counts().reset_index()
-etapas.columns = ["Etapa", "Quantidade"]
-fig_pie = px.pie(etapas, names="Etapa", values="Quantidade", hole=0.4)
-fig_pie.update_traces(textinfo="percent+label")
-st.plotly_chart(fig_pie, use_container_width=True)
-
 # 💸 Investimento Diário
 st.subheader("💸 Investimento Diário em Anúncios (Meta Ads)")
 
@@ -146,6 +138,14 @@ fig_invest.update_layout(
 )
 
 st.plotly_chart(fig_invest, use_container_width=True)
+
+# 🥧 Etapas de abandono
+st.subheader("🥧 Distribuição das Etapas de Abandono")
+etapas = df_filtrado["ABANDONOU EM"].value_counts().reset_index()
+etapas.columns = ["Etapa", "Quantidade"]
+fig_pie = px.pie(etapas, names="Etapa", values="Quantidade", hole=0.4)
+fig_pie.update_traces(textinfo="percent+label")
+st.plotly_chart(fig_pie, use_container_width=True)
 
 # 💾 Baixar dados filtrados
 st.download_button(
