@@ -8,14 +8,15 @@ st.set_page_config(page_title="Carrinhos Abandonados", layout="wide")
 csv_abandono_url = "https://docs.google.com/spreadsheets/d/1OBKs2RpmRNqHDn6xE3uMOU-bwwnO_JY1ZhqctZGpA3E/export?format=csv"
 csv_investimento_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m5Wq7YaTs3CKPmecLjB3lDyBTI/export?format=csv"
 
+# 🔍 Função para extrair Data + Investimento total da planilha de anúncios
 def extrair_investimento(csv_url):
     df_raw = pd.read_csv(csv_url, header=None)
 
-    # Extrai data de B2
+    # Data em B2 (linha 1, coluna 1)
     data_str = df_raw.iloc[1, 1]
     data = pd.to_datetime(data_str, dayfirst=True, errors="coerce")
 
-    # Extrai valor total de onde a coluna A for "TOTAL"
+    # Busca linha com "TOTAL" na coluna A
     linha_total = df_raw[df_raw[0].astype(str).str.upper().str.strip() == "TOTAL"]
     if not linha_total.empty:
         valor_raw = linha_total.iloc[0, 2]
@@ -72,7 +73,7 @@ col3.metric("🛒 Total de Abandonos", total_abandonos)
 
 st.divider()
 
-# 📈 Abandonos por dia + Investimento
+# 📈 Gráfico: Abandonos por dia + Investimento
 st.subheader("📅 Abandonos vs Investimento Meta Ads")
 
 abandonos_dia = (
