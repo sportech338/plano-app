@@ -11,7 +11,7 @@ csv_base_dados_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m
 @st.cache_data
 def load_data():
     df_abandono = pd.read_csv(csv_abandono_url)
-    df_abandono["DATA INICIAL"] = pd.to_datetime(df_abandono["DATA INICIAL"], errors="coerce")
+    df_abandono["DATA INICIAL"] = pd.to_datetime(df_abandono["DATA INICIAL"], format="%d/%m/%Y %H:%M", errors="coerce")
     df_abandono["VALOR"] = df_abandono["VALOR"].astype(str).str.replace(",", ".").astype(float)
     df_abandono.dropna(subset=["DATA INICIAL", "VALOR", "ABANDONOU EM"], inplace=True)
     return df_abandono
@@ -30,6 +30,9 @@ def load_investimentos():
 # 📦 Dados
 df = load_data()
 df_ads = load_investimentos()
+# 🔍 Verificação: datas mais recentes carregadas do CSV
+st.write("📅 Datas mais recentes reconhecidas no arquivo de abandono:")
+st.dataframe(df.sort_values("DATA INICIAL", ascending=False).head(5))
 
 # ✅ Diagnóstico direto
 st.sidebar.markdown(f"📅 Última data reconhecida: **{df['DATA INICIAL'].max().date()}**")
