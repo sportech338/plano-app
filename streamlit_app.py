@@ -16,8 +16,11 @@ def load_data():
     df_abandono.dropna(subset=["DATA INICIAL", "VALOR", "ABANDONOU EM"], inplace=True)
 
     df_invest = pd.read_csv(csv_investimento_url)
+    st.write("Colunas do df_invest:", df_invest.columns.tolist())
+    df_invest.columns = df_invest.columns.str.strip()  # Remove espaços invisíveis
     df_invest["Data"] = pd.to_datetime(df_invest["Data"], errors="coerce")
     df_invest["Investimento"] = df_invest["Investimento"].astype(str).str.replace(",", ".").astype(float)
+
     df_invest = df_invest[["Data", "Investimento"]].dropna()
 
     return df_abandono, df_invest
