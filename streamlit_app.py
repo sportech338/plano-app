@@ -17,8 +17,7 @@ def load_data():
     df_abandono.dropna(subset=["DATA INICIAL", "VALOR", "ABANDONOU EM"], inplace=True)
 
     # 📊 Investimento diário (aba 'Base de dados')
-    df_ads = pd.read_csv(csv_base_dados_url)
-    df_ads.columns = ["Data", "Gasto"]
+    df_ads = pd.read_csv(csv_base_dados_url, usecols=[0, 1], names=["Data", "Gasto"], header=None, skiprows=1)
     df_ads["Data"] = pd.to_datetime(df_ads["Data"], errors="coerce")
     df_ads["Investimento"] = df_ads["Gasto"].astype(str).str.replace(",", ".").astype(float)
     df_ads = df_ads[["Data", "Investimento"]].dropna()
