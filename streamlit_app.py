@@ -18,7 +18,7 @@ def load_data():
 
 @st.cache_data
 def load_investimentos():
-    df_ads = pd.read_csv(csv_base_dados_url, names=["Data", "Gasto"], header=None)
+    df_ads = pd.read_csv(csv_base_dados_url, header=0)
     df_ads["Data"] = pd.to_datetime(df_ads["Data"], format="%d/%m/%Y", errors="coerce")
     df_ads["Investimento"] = pd.to_numeric(
         df_ads["Gasto"].astype(str).str.replace(".", "", regex=False).str.replace(",", "."),
@@ -116,7 +116,6 @@ st.plotly_chart(fig, use_container_width=True)
 # 💸 Investimento Diário
 st.subheader("💸 Investimento Diário em Anúncios (Meta Ads)")
 
-df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"]).dt.date
 df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"])
 
 investimento_por_dia = (
