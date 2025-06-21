@@ -37,16 +37,19 @@ data_min = df["DATA INICIAL"].min()
 data_max = df["DATA INICIAL"].max()
 
 datas = st.sidebar.date_input(
-    "Selecionar intervalo:",
+    "Selecionar intervalo ou dia único:",
     [data_min, data_max],
     min_value=data_min,
     max_value=data_max
 )
 
+# ✅ Ajuste para aceitar 1 ou 2 datas
 if isinstance(datas, tuple) and len(datas) == 2:
     data_inicial, data_final = datas
+elif isinstance(datas, pd.Timestamp):
+    data_inicial = data_final = datas
 else:
-    st.error("Por favor, selecione um intervalo de datas válido.")
+    st.error("Por favor, selecione uma ou duas datas válidas.")
     st.stop()
 
 # 🔍 Filtragem
@@ -76,7 +79,6 @@ st.divider()
 
 # 📈 Gráfico: Abandonos por Dia
 st.subheader("📅 Carrinhos Abandonados por Dia")
-
 df_filtrado["DataFormatada"] = pd.to_datetime(df_filtrado["DATA INICIAL"].dt.date)
 
 abandonos_dia = (
@@ -112,7 +114,6 @@ st.plotly_chart(fig, use_container_width=True)
 st.subheader("💸 Investimento Diário em Anúncios (Meta Ads)")
 
 df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"]).dt.date
-
 df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"])
 
 investimento_por_dia = (
@@ -174,8 +175,11 @@ st.download_button(
 # 🎯 Metas Estratégicas com base na Etapa com Maior Abandono
 st.subheader("🎯 Metas Baseadas na Etapa com Maior Abandono")
 
-etapa_critica = df_filtrado["ABANDONOU EM"].value_counts().idxmax()
-st.warning(f"⚠️ Etapa com maior abandono: **{etapa_critica}**")
+if not df_filtrado.empty:
+    etapa_critica = df_filtrado["ABANDONOU EM"].value_counts().idxmax()
+    st.warning(f"⚠️ Etapa com maior abandono: **{etapa_critica}**")
+else:
+    st.warning("Sem dados para o período selecionado.")
 
 with st.expander("💳 Reduzir abandono na etapa de pagamento"):
     status_pagamento = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_pagamento")
@@ -185,7 +189,7 @@ with st.expander("💳 Reduzir abandono na etapa de pagamento"):
     - Oferecer opções como Pix, boleto, 1-clique  
     - Inserir selos de segurança visíveis
     """)
-    ideias_pagamento = st.text_area("💡 Ideias do time:", key="ideia_pagamento")
+    st.text_area("💡 Ideias do time:", key="ideia_pagamento")
     st.info(f"Status atual: {status_pagamento}")
 
 with st.expander("🧾 Melhorar taxa de conclusão na etapa de dados pessoais"):
@@ -196,7 +200,7 @@ with st.expander("🧾 Melhorar taxa de conclusão na etapa de dados pessoais"):
     - Permitir login com Google/Meta  
     - Usar preenchimento automático
     """)
-    ideias_dados = st.text_area("💡 Ideias do time:", key="ideia_dados")
+    st.text_area("💡 Ideias do time:", key="ideia_dados")
     st.info(f"Status atual: {status_dados}")
 
 with st.expander("💰 Aumentar ticket médio com combos"):
@@ -207,7 +211,7 @@ with st.expander("💰 Aumentar ticket médio com combos"):
     - Sugerir upsell no checkout  
     - Testar combos sazonais com desconto
     """)
-    ideias_combos = st.text_area("💡 Ideias do time:", key="ideia_combos")
+    st.text_area("💡 Ideias do time:", key="ideia_combos")
     st.info(f"Status atual: {status_combos}")
 
 with st.expander("📞 Recuperar 25% dos abandonos com remarketing"):
@@ -218,5 +222,5 @@ with st.expander("📞 Recuperar 25% dos abandonos com remarketing"):
     - Retargeting com Meta Ads e e-mail  
     - Criar urgência com prazos ou bônus
     """)
-    ideias_recuperacao = st.text_area("💡 Ideias do time:", key="ideia_recuperacao")
+    st.text_area("💡 Ideias do time:", key="ideia_recuperacao")
     st.info(f"Status atual: {status_recuperacao}")
