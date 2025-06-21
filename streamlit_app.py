@@ -31,6 +31,10 @@ def load_investimentos():
 df = load_data()
 df_ads = load_investimentos()
 
+# ✅ Diagnóstico direto
+st.sidebar.markdown(f"📅 Última data reconhecida: **{df['DATA INICIAL'].max().date()}**")
+st.sidebar.markdown(f"🔢 Total de linhas no DataFrame: {len(df)}")
+
 # 🎯 Filtro de datas
 st.sidebar.header("📅 Filtro de Período")
 data_min = df["DATA INICIAL"].min()
