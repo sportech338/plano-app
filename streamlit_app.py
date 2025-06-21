@@ -43,25 +43,21 @@ datas = st.sidebar.date_input(
     max_value=data_max
 )
 
-# ✅ Ajuste para aceitar 1 ou 2 datas
-if isinstance(datas, tuple) and len(datas) == 2:
-    data_inicial, data_final = datas
-elif isinstance(datas, pd.Timestamp):
-    data_inicial = data_final = datas
+# ✅ Suporte a 1 ou 2 datas
+if isinstance(datas, tuple):
+    if len(datas) == 2:
+        data_inicial, data_final = datas
+    elif len(datas) == 1:
+        data_inicial = data_final = datas[0]
+    else:
+        st.error("Por favor, selecione ao menos uma data.")
+        st.stop()
 else:
-    st.error("Por favor, selecione uma ou duas datas válidas.")
-    st.stop()
+    data_inicial = data_final = datas
 
 # 🔍 Filtragem
-df_filtrado = df[
-    (df["DATA INICIAL"] >= pd.to_datetime(data_inicial)) &
-    (df["DATA INICIAL"] <= pd.to_datetime(data_final))
-].copy()
-
-df_ads_filtrado = df_ads[
-    (df_ads["Data"] >= pd.to_datetime(data_inicial)) &
-    (df_ads["Data"] <= pd.to_datetime(data_final))
-].copy()
+df_filtrado = df[(df["DATA INICIAL"] >= data_inicial) & (df["DATA INICIAL"] <= data_final)].copy()
+df_ads_filtrado = df_ads[(df_ads["Data"] >= data_inicial) & (df_ads["Data"] <= data_final)].copy()
 
 # 📊 KPIs
 valor_total = df_filtrado["VALOR"].sum()
@@ -72,82 +68,87 @@ st.title("📦 Dashboard de Carrinhos Abandonados")
 
 col1, col2, col3 = st.columns(3)
 col1.metric("💰 Valor Total Abandonado", f"R$ {valor_total:,.2f}")
-col2.metric("🧾 Ticket Médio", f"R$ {ticket_medio:,.2f}")
+col2.metric("🧾 Ticket Médio", f"R$ {ticket_medio:,.2f}" if not pd.isna(ticket_medio) else "R$ 0,00")
 col3.metric("🛒 Total de Abandonos", total_abandonos)
 
 st.divider()
 
 # 📈 Gráfico: Abandonos por Dia
 st.subheader("📅 Carrinhos Abandonados por Dia")
-df_filtrado["DataFormatada"] = pd.to_datetime(df_filtrado["DATA INICIAL"].dt.date)
+if not df_filtrado.empty:
+    df_filtrado["DataFormatada"] = pd.to_datetime(df_filtrado["DATA INICIAL"].dt.date)
 
-abandonos_dia = (
-    df_filtrado.groupby("DataFormatada")
-    .size()
-    .reset_index(name="Abandonos")
-    .sort_values("DataFormatada")
-)
+    abandonos_dia = (
+        df_filtrado.groupby("DataFormatada")
+        .size()
+        .reset_index(name="Abandonos")
+        .sort_values("DataFormatada")
+    )
 
-fig = px.bar(
-    abandonos_dia,
-    x=abandonos_dia["DataFormatada"].dt.strftime("%d/%m"),
-    y="Abandonos",
-    text="Abandonos",
-    labels={"DataFormatada": "Data", "Abandonos": "Carrinhos Abandonados"},
-    title="📊 Carrinhos Abandonados por Dia",
-    color_discrete_sequence=["#1f77b4"]
-)
+    fig = px.bar(
+        abandonos_dia,
+        x=abandonos_dia["DataFormatada"].dt.strftime("%d/%m"),
+        y="Abandonos",
+        text="Abandonos",
+        labels={"DataFormatada": "Data", "Abandonos": "Carrinhos Abandonados"},
+        title="📊 Carrinhos Abandonados por Dia",
+        color_discrete_sequence=["#1f77b4"]
+    )
 
-fig.update_traces(textposition="outside")
-fig.update_layout(
-    xaxis_tickformat="%d/%m",
-    yaxis_title="Abandonos",
-    bargap=0.2,
-    margin=dict(t=50, b=40, l=0, r=0),
-    height=450,
-    template="simple_white"
-)
+    fig.update_traces(textposition="outside")
+    fig.update_layout(
+        xaxis_tickformat="%d/%m",
+        yaxis_title="Abandonos",
+        bargap=0.2,
+        margin=dict(t=50, b=40, l=0, r=0),
+        height=450,
+        template="simple_white"
+    )
 
-st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.info("Nenhum dado de abandono disponível para o período selecionado.")
 
 # 💸 Investimento Diário
 st.subheader("💸 Investimento Diário em Anúncios (Meta Ads)")
+if not df_ads_filtrado.empty:
+    investimento_por_dia = (
+        df_ads_filtrado
+        .groupby("Data")["Investimento"]
+        .sum()
+        .reset_index()
+        .sort_values("Data")
+    )
 
-df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"]).dt.date
-df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"])
+    fig_invest = px.line(
+        investimento_por_dia,
+        x=investimento_por_dia["Data"].dt.strftime("%d/%m"),
+        y="Investimento",
+        markers=True,
+        title="📈 Investimento por Dia",
+        labels={"Data": "Data", "Investimento": "Valor Investido (R$)"}
+    )
 
-investimento_por_dia = (
-    df_ads_filtrado
-    .groupby("Data")["Investimento"]
-    .sum()
-    .reset_index()
-    .sort_values("Data")
-)
+    fig_invest.update_layout(
+        template="simple_white",
+        height=400,
+        margin=dict(t=50, b=40, l=0, r=0)
+    )
 
-fig_invest = px.line(
-    investimento_por_dia,
-    x=investimento_por_dia["Data"].dt.strftime("%d/%m"),
-    y="Investimento",
-    markers=True,
-    title="📈 Investimento por Dia",
-    labels={"Data": "Data", "Investimento": "Valor Investido (R$)"}
-)
-
-fig_invest.update_layout(
-    template="simple_white",
-    height=400,
-    margin=dict(t=50, b=40, l=0, r=0)
-)
-
-st.plotly_chart(fig_invest, use_container_width=True)
+    st.plotly_chart(fig_invest, use_container_width=True)
+else:
+    st.info("Nenhum dado de investimento disponível para o período selecionado.")
 
 # 🥧 Etapas de abandono
 st.subheader("🥧 Distribuição das Etapas de Abandono")
-etapas = df_filtrado["ABANDONOU EM"].value_counts().reset_index()
-etapas.columns = ["Etapa", "Quantidade"]
-fig_pie = px.pie(etapas, names="Etapa", values="Quantidade", hole=0.4)
-fig_pie.update_traces(textinfo="percent+label")
-st.plotly_chart(fig_pie, use_container_width=True)
+if not df_filtrado.empty:
+    etapas = df_filtrado["ABANDONOU EM"].value_counts().reset_index()
+    etapas.columns = ["Etapa", "Quantidade"]
+    fig_pie = px.pie(etapas, names="Etapa", values="Quantidade", hole=0.4)
+    fig_pie.update_traces(textinfo="percent+label")
+    st.plotly_chart(fig_pie, use_container_width=True)
+else:
+    st.info("Sem etapas de abandono para o período selecionado.")
 
 # 💰 Simulador de recuperação
 st.subheader("📊 Simulador de Receita Recuperável")
@@ -174,7 +175,6 @@ st.download_button(
 
 # 🎯 Metas Estratégicas com base na Etapa com Maior Abandono
 st.subheader("🎯 Metas Baseadas na Etapa com Maior Abandono")
-
 if not df_filtrado.empty:
     etapa_critica = df_filtrado["ABANDONOU EM"].value_counts().idxmax()
     st.warning(f"⚠️ Etapa com maior abandono: **{etapa_critica}**")
@@ -219,7 +219,7 @@ with st.expander("📞 Recuperar 25% dos abandonos com remarketing"):
     st.markdown("""
     **Plano de Ação:**
     - Enviar mensagens automáticas no WhatsApp  
-    - Retargeting com Meta Ads e e-mail  
+    - Retargeting
     - Criar urgência com prazos ou bônus
     """)
     st.text_area("💡 Ideias do time:", key="ideia_recuperacao")
