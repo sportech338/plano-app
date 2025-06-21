@@ -154,14 +154,6 @@ fig_pie = px.pie(etapas, names="Etapa", values="Quantidade", hole=0.4)
 fig_pie.update_traces(textinfo="percent+label")
 st.plotly_chart(fig_pie, use_container_width=True)
 
-# 💾 Baixar dados filtrados
-st.download_button(
-    "⬇️ Baixar dados filtrados",
-    df_filtrado.to_csv(index=False),
-    file_name="dados_abandonos_filtrados.csv",
-    mime="text/csv"
-)
-
 # 🧠 Reflexão
 st.subheader("🧠 Perguntas Estratégicas para o Time de Marketing")
 st.markdown("""
@@ -170,3 +162,11 @@ st.markdown("""
 3. **Há padrões de abandono ao longo da semana?**  
 4. **Quais testes A/B podem melhorar o funil?**
 """)
+
+# 💾 Baixar dados filtrados
+st.download_button(
+    "⬇️ Baixar dados filtrados",
+    df_filtrado.to_csv(index=False),
+    file_name="dados_abandonos_filtrados.csv",
+    mime="text/csv"
+)
