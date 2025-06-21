@@ -183,6 +183,7 @@ with st.expander("🛒 Reduzir abandonos em 30%"):
     - Usar urgência no botão de compra  
     - Reforçar CTAs nos produtos e carrinho
     """)
+    ideias1 = st.text_area("💡 Ideias do time:", key="ideia1")
     st.info(f"Status atual: {status_1}")
 
 with st.expander("💰 Aumentar ticket médio para R$ 120"):
@@ -193,6 +194,7 @@ with st.expander("💰 Aumentar ticket médio para R$ 120"):
     - Oferecer upsell no checkout  
     - Criar bundles com ticket ≥ R$ 120
     """)
+    ideias2 = st.text_area("💡 Ideias do time:", key="ideia2")
     st.info(f"Status atual: {status_2}")
 
 with st.expander("📞 Recuperar 25% dos valores via remarketing"):
@@ -203,6 +205,7 @@ with st.expander("📞 Recuperar 25% dos valores via remarketing"):
     - Criar campanha de retargeting no Meta Ads  
     - Enviar e-mails de recuperação
     """)
+    ideias3 = st.text_area("💡 Ideias do time:", key="ideia3")
     st.info(f"Status atual: {status_3}")
 
 with st.expander("💳 Reduzir abandono na etapa de pagamento"):
@@ -213,4 +216,5 @@ with st.expander("💳 Reduzir abandono na etapa de pagamento"):
     - Oferecer Pix, 1-clique e parcelamento  
     - Adicionar selos de segurança
     """)
+    ideias4 = st.text_area("💡 Ideias do time:", key="ideia4")
     st.info(f"Status atual: {status_4}")
