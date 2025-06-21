@@ -170,3 +170,47 @@ st.download_button(
     file_name="dados_abandonos_filtrados.csv",
     mime="text/csv"
 )
+
+# 🎯 Metas e Progresso Interativo
+st.subheader("🎯 Metas Estratégicas em Andamento")
+st.markdown("Atualize abaixo o status das principais metas do time:")
+
+with st.expander("🛒 Reduzir abandonos em 30%"):
+    status_1 = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta1")
+    st.markdown("""
+    **Plano de Ação:**
+    - Aplicar testes A/B no checkout  
+    - Usar urgência no botão de compra  
+    - Reforçar CTAs nos produtos e carrinho
+    """)
+    st.info(f"Status atual: {status_1}")
+
+with st.expander("💰 Aumentar ticket médio para R$ 120"):
+    status_2 = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta2")
+    st.markdown("""
+    **Plano de Ação:**
+    - Inserir combos e kits com preço promocional  
+    - Oferecer upsell no checkout  
+    - Criar bundles com ticket ≥ R$ 120
+    """)
+    st.info(f"Status atual: {status_2}")
+
+with st.expander("📞 Recuperar 25% dos valores via remarketing"):
+    status_3 = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta3")
+    st.markdown("""
+    **Plano de Ação:**
+    - Configurar automações no WhatsApp  
+    - Criar campanha de retargeting no Meta Ads  
+    - Enviar e-mails de recuperação
+    """)
+    st.info(f"Status atual: {status_3}")
+
+with st.expander("💳 Reduzir abandono na etapa de pagamento"):
+    status_4 = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta4")
+    st.markdown("""
+    **Plano de Ação:**
+    - Simplificar o formulário  
+    - Oferecer Pix, 1-clique e parcelamento  
+    - Adicionar selos de segurança
+    """)
+    st.info(f"Status atual: {status_4}")
