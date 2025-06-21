@@ -4,20 +4,20 @@ import plotly.express as px
 
 st.set_page_config(page_title="Carrinhos Abandonados", layout="wide")
 
-# 📥 Planilhas Google Sheets como CSV
+# 📥 URLs das planilhas como CSV
 csv_abandono_url = "https://docs.google.com/spreadsheets/d/1OBKs2RpmRNqHDn6xE3uMOU-bwwnO_JY1ZhqctZGpA3E/export?format=csv"
 csv_base_dados_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m5Wq7YaTs3CKPmecLjB3lDyBTI/export?format=csv&gid=0"
 
 @st.cache_data
 def load_data():
-    # 🛒 Carrinhos abandonados
+    # 🛒 Dados de carrinhos abandonados
     df_abandono = pd.read_csv(csv_abandono_url)
     df_abandono["DATA INICIAL"] = pd.to_datetime(df_abandono["DATA INICIAL"], dayfirst=True, errors="coerce")
     df_abandono["VALOR"] = df_abandono["VALOR"].astype(str).str.replace(",", ".").astype(float)
     df_abandono.dropna(subset=["DATA INICIAL", "VALOR", "ABANDONOU EM"], inplace=True)
 
-    # 📊 Investimento diário (aba 'Base de dados')
-    df_ads = pd.read_csv(csv_base_dados_url, usecols=[0, 1], names=["Data", "Gasto"], header=None, skiprows=1)
+    # 📊 Dados de investimento diário da aba 'Base de dados'
+    df_ads = pd.read_csv(csv_base_dados_url, names=["Data", "Gasto"], header=None)
     df_ads["Data"] = pd.to_datetime(df_ads["Data"], dayfirst=True, errors="coerce")
     df_ads["Investimento"] = pd.to_numeric(df_ads["Gasto"].astype(str).str.replace(",", "."), errors="coerce")
     df_ads = df_ads[["Data", "Investimento"]].dropna()
@@ -26,7 +26,7 @@ def load_data():
 
 df, df_ads = load_data()
 
-# 🎯 Filtro de datas
+# 🎯 Filtro de período
 st.sidebar.header("📅 Filtro de Período")
 data_min = df["DATA INICIAL"].min()
 data_max = df["DATA INICIAL"].max()
@@ -44,7 +44,7 @@ if not isinstance(data_range, tuple) or len(data_range) != 2:
 
 data_inicial, data_final = data_range
 
-# 🔍 Filtro aplicado
+# 🔍 Filtragem dos dados
 df_filtrado = df[(df["DATA INICIAL"] >= pd.to_datetime(data_inicial)) & (df["DATA INICIAL"] <= pd.to_datetime(data_final))]
 df_ads_filtrado = df_ads[(df_ads["Data"] >= pd.to_datetime(data_inicial)) & (df_ads["Data"] <= pd.to_datetime(data_final))]
 
@@ -62,11 +62,13 @@ col3.metric("🛒 Total de Abandonos", total_abandonos)
 
 st.divider()
 
-# 📈 Abandonos por dia + Investimento
+# 📈 Gráfico: Abandonos por dia + Investimento
 st.subheader("📅 Abandonos vs Investimento Meta Ads")
 
-df_filtrado.loc[:, "Data"] = df_filtrado["DATA INICIAL"].dt.date
-df_ads_filtrado.loc[:, "Data"] = pd.to_datetime(df_ads_filtrado["Data"]).dt.date
+df_filtrado = df_filtrado.copy()
+df_filtrado["Data"] = df_filtrado["DATA INICIAL"].dt.date
+df_ads_filtrado = df_ads_filtrado.copy()
+df_ads_filtrado["Data"] = df_ads_filtrado["Data"].dt.date
 
 abandonos_dia = (
     df_filtrado.groupby("Data")
@@ -76,7 +78,6 @@ abandonos_dia = (
 
 dados_merged = pd.merge(df_ads_filtrado, abandonos_dia, on="Data", how="left").fillna({"Abandonos": 0})
 
-# 📊 Gráfico combinado
 fig = px.bar(
     dados_merged, x="Data", y="Abandonos", text="Abandonos",
     labels={"Data": "Data", "Abandonos": "Carrinhos Abandonados"},
@@ -114,14 +115,14 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-# 🥧 Etapas de abandono
+# 🥧 Distribuição das etapas
 st.subheader("🥧 Distribuição das Etapas de Abandono")
 etapas = df_filtrado["ABANDONOU EM"].value_counts().reset_index()
 etapas.columns = ["Etapa", "Quantidade"]
 fig_pie = px.pie(etapas, names="Etapa", values="Quantidade", hole=0.4)
 st.plotly_chart(fig_pie, use_container_width=True)
 
-# 💰 Simulador de recuperação
+# 💰 Simulador
 st.subheader("📊 Simulador de Receita Recuperável")
 meta = st.slider("Taxa de recuperação esperada (%)", 0, 100, 25, step=5)
 valor_recuperado = valor_total * (meta / 100)
