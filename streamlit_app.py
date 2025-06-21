@@ -55,6 +55,10 @@ if isinstance(datas, tuple):
 else:
     data_inicial = data_final = datas
 
+# 🔍 Conversão para datetime64
+data_inicial = pd.to_datetime(data_inicial)
+data_final = pd.to_datetime(data_final)
+
 # 🔍 Filtragem
 df_filtrado = df[(df["DATA INICIAL"] >= data_inicial) & (df["DATA INICIAL"] <= data_final)].copy()
 df_ads_filtrado = df_ads[(df_ads["Data"] >= data_inicial) & (df_ads["Data"] <= data_final)].copy()
@@ -76,8 +80,7 @@ st.divider()
 # 📈 Gráfico: Abandonos por Dia
 st.subheader("📅 Carrinhos Abandonados por Dia")
 if not df_filtrado.empty:
-    df_filtrado["DataFormatada"] = pd.to_datetime(df_filtrado["DATA INICIAL"].dt.date)
-
+    df_filtrado["DataFormatada"] = df_filtrado["DATA INICIAL"].dt.date
     abandonos_dia = (
         df_filtrado.groupby("DataFormatada")
         .size()
@@ -87,7 +90,7 @@ if not df_filtrado.empty:
 
     fig = px.bar(
         abandonos_dia,
-        x=abandonos_dia["DataFormatada"].dt.strftime("%d/%m"),
+        x=abandonos_dia["DataFormatada"].astype(str),
         y="Abandonos",
         text="Abandonos",
         labels={"DataFormatada": "Data", "Abandonos": "Carrinhos Abandonados"},
@@ -97,7 +100,7 @@ if not df_filtrado.empty:
 
     fig.update_traces(textposition="outside")
     fig.update_layout(
-        xaxis_tickformat="%d/%m",
+        xaxis_tickangle=-45,
         yaxis_title="Abandonos",
         bargap=0.2,
         margin=dict(t=50, b=40, l=0, r=0),
@@ -219,7 +222,7 @@ with st.expander("📞 Recuperar 25% dos abandonos com remarketing"):
     st.markdown("""
     **Plano de Ação:**
     - Enviar mensagens automáticas no WhatsApp  
-    - Retargeting
+    - Retargeting com Meta Ads e e-mail  
     - Criar urgência com prazos ou bônus
     """)
     st.text_area("💡 Ideias do time:", key="ideia_recuperacao")
