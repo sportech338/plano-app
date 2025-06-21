@@ -108,8 +108,18 @@ st.plotly_chart(fig_pie, use_container_width=True)
 # 💸 Investimento Diário
 st.subheader("💸 Investimento Diário em Anúncios (Meta Ads)")
 
+# Garante que a coluna esteja no formato date puro
+df_ads_filtrado["Data"] = df_ads_filtrado["Data"].dt.date
+
+# Agrupa por data (caso tenha mais de uma linha por dia)
+investimento_por_dia = df_ads_filtrado.groupby("Data")["Investimento"].sum().reset_index()
+
+# Ordena as datas (garante visualização correta no gráfico)
+investimento_por_dia.sort_values("Data", inplace=True)
+
+# Gráfico corrigido
 fig_invest = px.line(
-    df_ads_filtrado,
+    investimento_por_dia,
     x="Data",
     y="Investimento",
     markers=True,
