@@ -4,8 +4,9 @@ import plotly.express as px
 
 st.set_page_config(page_title="Carrinhos Abandonados", layout="wide")
 
-# 📥 Planilha de abandonos
+# 📥 Planilhas CSV
 csv_abandono_url = "https://docs.google.com/spreadsheets/d/1OBKs2RpmRNqHDn6xE3uMOU-bwwnO_JY1ZhqctZGpA3E/export?format=csv"
+csv_base_dados_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m5Wq7YaTs3CKPmecLjB3lDyBTI/export?format=csv&gid=1860131802"
 
 @st.cache_data
 def load_data():
@@ -15,7 +16,20 @@ def load_data():
     df_abandono.dropna(subset=["DATA INICIAL", "VALOR", "ABANDONOU EM"], inplace=True)
     return df_abandono
 
+@st.cache_data
+def load_investimentos():
+    df_ads = pd.read_csv(csv_base_dados_url, names=["Data", "Gasto"], header=None)
+    df_ads["Data"] = pd.to_datetime(df_ads["Data"], format="%d/%m/%Y", errors="coerce")
+    df_ads["Investimento"] = pd.to_numeric(
+        df_ads["Gasto"].astype(str).str.replace(".", "", regex=False).str.replace(",", "."),
+        errors="coerce"
+    )
+    df_ads = df_ads.dropna(subset=["Data", "Investimento"])
+    return df_ads
+
+# 📦 Dados
 df = load_data()
+df_ads = load_investimentos()
 
 # 🎯 Filtro de datas
 st.sidebar.header("📅 Filtro de Período")
@@ -29,9 +43,15 @@ data_inicial, data_final = st.sidebar.date_input(
     max_value=data_max
 )
 
+# 🔍 Filtragem
 df_filtrado = df[
     (df["DATA INICIAL"] >= pd.to_datetime(data_inicial)) &
     (df["DATA INICIAL"] <= pd.to_datetime(data_final))
+].copy()
+
+df_ads_filtrado = df_ads[
+    (df_ads["Data"] >= pd.to_datetime(data_inicial)) &
+    (df_ads["Data"] <= pd.to_datetime(data_final))
 ].copy()
 
 # 📊 KPIs
@@ -84,6 +104,27 @@ etapas.columns = ["Etapa", "Quantidade"]
 fig_pie = px.pie(etapas, names="Etapa", values="Quantidade", hole=0.4)
 fig_pie.update_traces(textinfo="percent+label")
 st.plotly_chart(fig_pie, use_container_width=True)
+
+# 💸 Investimento Diário
+st.subheader("💸 Investimento Diário em Anúncios (Meta Ads)")
+
+fig_invest = px.line(
+    df_ads_filtrado,
+    x="Data",
+    y="Investimento",
+    markers=True,
+    title="📈 Investimento por Dia",
+    labels={"Data": "Data", "Investimento": "Valor Investido (R$)"}
+)
+
+fig_invest.update_layout(
+    xaxis_tickformat="%d/%m",
+    template="simple_white",
+    height=400,
+    margin=dict(t=50, b=40, l=0, r=0)
+)
+
+st.plotly_chart(fig_invest, use_container_width=True)
 
 # 💾 Baixar dados filtrados
 st.download_button(
