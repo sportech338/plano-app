@@ -4,70 +4,60 @@ import plotly.express as px
 
 st.set_page_config(page_title="Carrinhos Abandonados", layout="wide")
 
-# 📥 URLs das planilhas como CSV
+# 📥 Planilhas Google Sheets como CSV
 csv_abandono_url = "https://docs.google.com/spreadsheets/d/1OBKs2RpmRNqHDn6xE3uMOU-bwwnO_JY1ZhqctZGpA3E/export?format=csv"
-csv_base_dados_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m5Wq7YaTs3CKPmecLjB3lDyBTI/export?format=csv&gid=0"
+csv_investimento_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m5Wq7YaTs3CKPmecLjB3lDyBTI/export?format=csv"
+
+# 🔍 Função para extrair Data + Investimento total da planilha de anúncios
+def extrair_investimento(csv_url):
+    df_raw = pd.read_csv(csv_url, header=None)
+
+    # Data em B2 (linha 1, coluna 1)
+    data_str = df_raw.iloc[1, 1]
+    data = pd.to_datetime(data_str, dayfirst=True, errors="coerce")
+
+    # Busca linha com "TOTAL" na coluna A
+    linha_total = df_raw[df_raw[0].astype(str).str.upper().str.strip() == "TOTAL"]
+    if not linha_total.empty:
+        valor_raw = linha_total.iloc[0, 2]
+        valor = str(valor_raw).replace("R$", "").replace(",", ".").strip()
+        valor_float = float(valor)
+    else:
+        valor_float = 0.0
+
+    return pd.DataFrame({
+        "Data": [data],
+        "Investimento": [valor_float]
+    })
 
 @st.cache_data
 def load_data():
     df_abandono = pd.read_csv(csv_abandono_url)
-    df_abandono["DATA INICIAL"] = pd.to_datetime(df_abandono["DATA INICIAL"], format="%d/%m/%Y %H:%M", errors="coerce")
+    df_abandono["DATA INICIAL"] = pd.to_datetime(df_abandono["DATA INICIAL"], errors="coerce")
     df_abandono["VALOR"] = df_abandono["VALOR"].astype(str).str.replace(",", ".").astype(float)
     df_abandono.dropna(subset=["DATA INICIAL", "VALOR", "ABANDONOU EM"], inplace=True)
 
-    df_ads = pd.read_csv(csv_base_dados_url, names=["Data", "Gasto"], header=None)
-    df_ads["Data"] = pd.to_datetime(df_ads["Data"], format="%d/%m/%Y", errors="coerce")
-    df_ads["Investimento"] = pd.to_numeric(df_ads["Gasto"].astype(str).str.replace(",", "."), errors="coerce")
-    df_ads = df_ads[["Data", "Investimento"]].dropna()
+    df_invest = extrair_investimento(csv_investimento_url)
 
-    return df_abandono, df_ads
+    return df_abandono, df_invest
 
 df, df_ads = load_data()
 
-# 🎯 Filtro de datas
+# 🔍 Filtro de data
 st.sidebar.header("📅 Filtro de Período")
+data_min = df["DATA INICIAL"].min()
+data_max = df["DATA INICIAL"].max()
 
-if df["DATA INICIAL"].empty:
-    st.error("Nenhuma data disponível para filtro.")
-    st.stop()
-
-data_min = df["DATA INICIAL"].min().date()
-data_max = df["DATA INICIAL"].max().date()
-
-data_range = st.sidebar.date_input(
+data_inicial, data_final = st.sidebar.date_input(
     "Selecionar intervalo:",
-    value=(data_min, data_max),
+    [data_min, data_max],
     min_value=data_min,
     max_value=data_max
 )
 
-if isinstance(data_range, tuple) and len(data_range) == 2:
-    data_inicial, data_final = data_range
-else:
-    st.warning("Selecione um intervalo válido. Exibindo todos os dados.")
-    data_inicial, data_final = data_min, data_max
-
-
-# 🔍 Filtra por intervalo de datas
-df_filtrado = df[
-    (df["DATA INICIAL"].dt.date >= data_inicial) &
-    (df["DATA INICIAL"].dt.date <= data_final)
-].copy()
-df_ads_filtrado = df_ads[
-    (df_ads["Data"].dt.date >= data_inicial) &
-    (df_ads["Data"].dt.date <= data_final)
-].copy()
-
-# Força datas como string para merge
-df_filtrado.loc[:, "Data"] = df_filtrado["DATA INICIAL"].dt.strftime("%Y-%m-%d")
-df_ads_filtrado.loc[:, "Data"] = df_ads_filtrado["Data"].dt.strftime("%Y-%m-%d")
-
-# Agrupamento de abandonos por dia
-abandonos_dia = df_filtrado.groupby("Data").size().reset_index(name="Abandonos")
-
-# Merge e ajuste para datetime
-dados_merged = pd.merge(df_ads_filtrado, abandonos_dia, on="Data", how="left").fillna({"Abandonos": 0})
-dados_merged["Data"] = pd.to_datetime(dados_merged["Data"])
+# 🎯 Aplica filtro
+df_filtrado = df[(df["DATA INICIAL"] >= pd.to_datetime(data_inicial)) & (df["DATA INICIAL"] <= pd.to_datetime(data_final))]
+df_ads_filtrado = df_ads[(df_ads["Data"] >= pd.to_datetime(data_inicial)) & (df_ads["Data"] <= pd.to_datetime(data_final))]
 
 # 📊 KPIs
 valor_total = df_filtrado["VALOR"].sum()
@@ -83,8 +73,21 @@ col3.metric("🛒 Total de Abandonos", total_abandonos)
 
 st.divider()
 
-# 📈 Gráfico: Abandonos vs Investimento
+# 📈 Abandonos por dia + Investimento
 st.subheader("📅 Abandonos vs Investimento Meta Ads")
+
+# Força Data como datetime.date nas duas tabelas
+df_filtrado["Data"] = df_filtrado["DATA INICIAL"].dt.date
+df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"]).dt.date
+
+abandonos_dia = (
+    df_filtrado.groupby("Data")
+    .size()
+    .reset_index(name="Abandonos")
+)
+
+dados_merged = pd.merge(abandonos_dia, df_ads_filtrado, on="Data", how="left").fillna(0)
+
 
 fig = px.bar(
     dados_merged, x="Data", y="Abandonos", text="Abandonos",
@@ -97,16 +100,14 @@ fig.add_scatter(
     x=dados_merged["Data"],
     y=dados_merged["Investimento"],
     name="Investimento (Meta Ads)",
-    mode="lines+markers+text",
-    text=[f"R$ {v:,.2f}" for v in dados_merged["Investimento"]],
-    textposition="top center",
+    mode="lines+markers",
     yaxis="y2"
 )
 
+# Só aplica "textposition" nos traços do tipo "bar"
 for trace in fig.data:
     if trace.type == "bar":
         trace.textposition = "outside"
-
 fig.update_layout(
     xaxis_tickformat="%d/%m",
     yaxis_title="Abandonos",
@@ -122,10 +123,6 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True)
-
-# 🔎 Debug opcional
-with st.expander("📋 Dados combinados (debug)"):
-    st.dataframe(dados_merged)
 
 # 🥧 Etapas de abandono
 st.subheader("🥧 Distribuição das Etapas de Abandono")
