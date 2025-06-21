@@ -43,7 +43,6 @@ datas = st.sidebar.date_input(
     max_value=data_max
 )
 
-# ✅ Garante que o intervalo seja válido
 if isinstance(datas, tuple) and len(datas) == 2:
     data_inicial, data_final = datas
 else:
@@ -113,6 +112,7 @@ st.plotly_chart(fig, use_container_width=True)
 st.subheader("💸 Investimento Diário em Anúncios (Meta Ads)")
 
 df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"]).dt.date
+
 df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"])
 
 investimento_por_dia = (
@@ -171,50 +171,52 @@ st.download_button(
     mime="text/csv"
 )
 
-# 🎯 Metas e Progresso Interativo
-st.subheader("🎯 Metas Estratégicas em Andamento")
-st.markdown("Atualize abaixo o status das principais metas do time:")
+# 🎯 Metas Estratégicas com base na Etapa com Maior Abandono
+st.subheader("🎯 Metas Baseadas na Etapa com Maior Abandono")
 
-with st.expander("🛒 Reduzir abandonos em 30%"):
-    status_1 = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta1")
-    st.markdown("""
-    **Plano de Ação:**
-    - Aplicar testes A/B no checkout  
-    - Usar urgência no botão de compra  
-    - Reforçar CTAs nos produtos e carrinho
-    """)
-    ideias1 = st.text_area("💡 Ideias do time:", key="ideia1")
-    st.info(f"Status atual: {status_1}")
-
-with st.expander("💰 Aumentar ticket médio para R$ 120"):
-    status_2 = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta2")
-    st.markdown("""
-    **Plano de Ação:**
-    - Inserir combos e kits com preço promocional  
-    - Oferecer upsell no checkout  
-    - Criar bundles com ticket ≥ R$ 120
-    """)
-    ideias2 = st.text_area("💡 Ideias do time:", key="ideia2")
-    st.info(f"Status atual: {status_2}")
-
-with st.expander("📞 Recuperar 25% dos valores via remarketing"):
-    status_3 = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta3")
-    st.markdown("""
-    **Plano de Ação:**
-    - Configurar automações no WhatsApp  
-    - Criar campanha de retargeting no Meta Ads  
-    - Enviar e-mails de recuperação
-    """)
-    ideias3 = st.text_area("💡 Ideias do time:", key="ideia3")
-    st.info(f"Status atual: {status_3}")
+etapa_critica = df_filtrado["ABANDONOU EM"].value_counts().idxmax()
+st.warning(f"⚠️ Etapa com maior abandono: **{etapa_critica}**")
 
 with st.expander("💳 Reduzir abandono na etapa de pagamento"):
-    status_4 = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta4")
+    status_pagamento = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_pagamento")
     st.markdown("""
     **Plano de Ação:**
-    - Simplificar o formulário  
-    - Oferecer Pix, 1-clique e parcelamento  
-    - Adicionar selos de segurança
+    - Reduzir campos desnecessários no checkout  
+    - Oferecer opções como Pix, boleto, 1-clique  
+    - Inserir selos de segurança visíveis
     """)
-    ideias4 = st.text_area("💡 Ideias do time:", key="ideia4")
-    st.info(f"Status atual: {status_4}")
+    ideias_pagamento = st.text_area("💡 Ideias do time:", key="ideia_pagamento")
+    st.info(f"Status atual: {status_pagamento}")
+
+with st.expander("🧾 Melhorar taxa de conclusão na etapa de dados pessoais"):
+    status_dados = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_dados")
+    st.markdown("""
+    **Plano de Ação:**
+    - Simplificar o formulário inicial  
+    - Permitir login com Google/Meta  
+    - Usar preenchimento automático
+    """)
+    ideias_dados = st.text_area("💡 Ideias do time:", key="ideia_dados")
+    st.info(f"Status atual: {status_dados}")
+
+with st.expander("💰 Aumentar ticket médio com combos"):
+    status_combos = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_combos")
+    st.markdown("""
+    **Plano de Ação:**
+    - Criar bundles com ticket acima de R$ 120  
+    - Sugerir upsell no checkout  
+    - Testar combos sazonais com desconto
+    """)
+    ideias_combos = st.text_area("💡 Ideias do time:", key="ideia_combos")
+    st.info(f"Status atual: {status_combos}")
+
+with st.expander("📞 Recuperar 25% dos abandonos com remarketing"):
+    status_recuperacao = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_remarketing")
+    st.markdown("""
+    **Plano de Ação:**
+    - Enviar mensagens automáticas no WhatsApp  
+    - Retargeting com Meta Ads e e-mail  
+    - Criar urgência com prazos ou bônus
+    """)
+    ideias_recuperacao = st.text_area("💡 Ideias do time:", key="ideia_recuperacao")
+    st.info(f"Status atual: {status_recuperacao}")
