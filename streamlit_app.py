@@ -92,7 +92,6 @@ fig.add_scatter(
     yaxis="y2"
 )
 
-# Posiciona os textos fora das barras
 for trace in fig.data:
     if trace.type == "bar":
         trace.textposition = "outside"
