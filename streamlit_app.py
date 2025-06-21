@@ -104,7 +104,10 @@ fig.add_scatter(
     yaxis="y2"
 )
 
-fig.update_traces(textposition="outside")
+# Só aplica "textposition" nos traços do tipo "bar"
+for trace in fig.data:
+    if trace.type == "bar":
+        trace.textposition = "outside"
 fig.update_layout(
     xaxis_tickformat="%d/%m",
     yaxis_title="Abandonos",
