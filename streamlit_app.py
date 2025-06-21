@@ -62,8 +62,11 @@ fig_bar = px.bar(
     title="📅 Carrinhos Abandonados por Dia",
     labels={"DATA INICIAL": "Data", "Quantidade": "Total de Abandonos"},
     color_discrete_sequence=["#1f77b4"],
-    template="simple_white"
+    template="simple_white",
+    text="Quantidade"  # Rótulo no topo da barra
 )
+
+fig_bar.update_traces(textposition="outside")
 
 fig_bar.update_layout(
     xaxis_tickformat="%d/%m",
