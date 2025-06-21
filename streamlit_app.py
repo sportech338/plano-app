@@ -4,27 +4,18 @@ import plotly.express as px
 
 st.set_page_config(page_title="Carrinhos Abandonados", layout="wide")
 
-# 📥 Planilhas Google Sheets como CSV
+# 📥 Planilha de abandonos
 csv_abandono_url = "https://docs.google.com/spreadsheets/d/1OBKs2RpmRNqHDn6xE3uMOU-bwwnO_JY1ZhqctZGpA3E/export?format=csv"
-csv_base_dados_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m5Wq7YaTs3CKPmecLjB3lDyBTI/export?format=csv&gid=0"
 
 @st.cache_data
 def load_data():
-    # 🛒 Abandonos
     df_abandono = pd.read_csv(csv_abandono_url)
     df_abandono["DATA INICIAL"] = pd.to_datetime(df_abandono["DATA INICIAL"], errors="coerce")
     df_abandono["VALOR"] = df_abandono["VALOR"].astype(str).str.replace(",", ".").astype(float)
     df_abandono.dropna(subset=["DATA INICIAL", "VALOR", "ABANDONOU EM"], inplace=True)
+    return df_abandono
 
-    # 📊 Investimentos (Base de Dados)
-    df_ads = pd.read_csv(csv_base_dados_url, names=["Data", "Gasto"], header=None)
-    df_ads["Data"] = pd.to_datetime(df_ads["Data"], format="%d/%m/%Y", errors="coerce")
-    df_ads["Investimento"] = pd.to_numeric(df_ads["Gasto"].astype(str).str.replace(".", "", regex=False).str.replace(",", "."), errors="coerce")
-    df_ads = df_ads.dropna(subset=["Data", "Investimento"])
-
-    return df_abandono, df_ads
-
-df, df_ads = load_data()
+df = load_data()
 
 # 🎯 Filtro de datas
 st.sidebar.header("📅 Filtro de Período")
@@ -38,15 +29,9 @@ data_inicial, data_final = st.sidebar.date_input(
     max_value=data_max
 )
 
-# 🔍 Filtra por intervalo de datas
 df_filtrado = df[
     (df["DATA INICIAL"] >= pd.to_datetime(data_inicial)) &
     (df["DATA INICIAL"] <= pd.to_datetime(data_final))
-].copy()
-
-df_ads_filtrado = df_ads[
-    (df_ads["Data"] >= pd.to_datetime(data_inicial)) &
-    (df_ads["Data"] <= pd.to_datetime(data_final))
 ].copy()
 
 # 📊 KPIs
@@ -63,52 +48,28 @@ col3.metric("🛒 Total de Abandonos", total_abandonos)
 
 st.divider()
 
-# 📈 Gráfico: Abandonos vs Investimento Meta Ads
-st.subheader("📅 Abandonos vs Investimento Meta Ads")
+# 📈 Gráfico: Abandonos por Dia
+st.subheader("📅 Carrinhos Abandonados por Dia")
 
-# Converte datas para .date para garantir consistência
-df_filtrado["Data"] = df_filtrado["DATA INICIAL"].dt.date
-df_ads_filtrado["Data"] = df_ads_filtrado["Data"].dt.date
-
-# Agrupa abandonos por dia
+df_filtrado["DataFormatada"] = df_filtrado["DATA INICIAL"].dt.date
 abandonos_dia = (
-    df_filtrado.groupby("Data")
+    df_filtrado.groupby("DataFormatada")
     .size()
     .reset_index(name="Abandonos")
 )
 
-# Junta com investimento
-dados_merged = pd.merge(abandonos_dia, df_ads_filtrado, on="Data", how="left").fillna(0)
-
-# Cria gráfico
 fig = px.bar(
-    dados_merged, x="Data", y="Abandonos", text="Abandonos",
-    labels={"Data": "Data", "Abandonos": "Carrinhos Abandonados"},
-    title="📊 Carrinhos Abandonados por Dia com Investimento",
+    abandonos_dia, x="DataFormatada", y="Abandonos", text="Abandonos",
+    labels={"DataFormatada": "Data", "Abandonos": "Carrinhos Abandonados"},
+    title="📊 Carrinhos Abandonados por Dia",
     color_discrete_sequence=["#1f77b4"]
 )
 
-fig.add_scatter(
-    x=dados_merged["Data"],
-    y=dados_merged["Investimento"],
-    name="Investimento (Meta Ads)",
-    mode="lines+markers",
-    yaxis="y2"
-)
-
-for trace in fig.data:
-    if trace.type == "bar":
-        trace.textposition = "outside"
-
+fig.update_traces(textposition="outside")
 fig.update_layout(
     xaxis_tickformat="%d/%m",
     yaxis_title="Abandonos",
-    yaxis2=dict(
-        title="Investimento (R$)",
-        overlaying="y",
-        side="right",
-        showgrid=False
-    ),
+    bargap=0.2,
     margin=dict(t=50, b=40, l=0, r=0),
     height=450,
     template="simple_white"
@@ -121,7 +82,16 @@ st.subheader("🥧 Distribuição das Etapas de Abandono")
 etapas = df_filtrado["ABANDONOU EM"].value_counts().reset_index()
 etapas.columns = ["Etapa", "Quantidade"]
 fig_pie = px.pie(etapas, names="Etapa", values="Quantidade", hole=0.4)
+fig_pie.update_traces(textinfo="percent+label")
 st.plotly_chart(fig_pie, use_container_width=True)
+
+# 💾 Baixar dados filtrados
+st.download_button(
+    "⬇️ Baixar dados filtrados",
+    df_filtrado.to_csv(index=False),
+    file_name="dados_abandonos_filtrados.csv",
+    mime="text/csv"
+)
 
 # 💰 Simulador de recuperação
 st.subheader("📊 Simulador de Receita Recuperável")
@@ -134,6 +104,6 @@ st.subheader("🧠 Perguntas Estratégicas para o Time de Marketing")
 st.markdown("""
 1. **Qual etapa está gerando mais perda de receita?**  
 2. **Estamos priorizando os carrinhos de maior valor?**  
-3. **Há relação entre aumento de investimento e abandono?**  
+3. **Há padrões de abandono ao longo da semana?**  
 4. **Quais testes A/B podem melhorar o funil?**
 """)
