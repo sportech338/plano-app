@@ -11,12 +11,12 @@ csv_base_dados_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m
 @st.cache_data
 def load_data():
     df_abandono = pd.read_csv(csv_abandono_url)
-    df_abandono["DATA INICIAL"] = pd.to_datetime(df_abandono["DATA INICIAL"], dayfirst=True, errors="coerce")
+    df_abandono["DATA INICIAL"] = pd.to_datetime(df_abandono["DATA INICIAL"], format="%d/%m/%Y %H:%M", errors="coerce")
     df_abandono["VALOR"] = df_abandono["VALOR"].astype(str).str.replace(",", ".").astype(float)
     df_abandono.dropna(subset=["DATA INICIAL", "VALOR", "ABANDONOU EM"], inplace=True)
 
     df_ads = pd.read_csv(csv_base_dados_url, names=["Data", "Gasto"], header=None)
-    df_ads["Data"] = pd.to_datetime(df_ads["Data"], dayfirst=True, errors="coerce")
+    df_ads["Data"] = pd.to_datetime(df_ads["Data"], format="%d/%m/%Y", errors="coerce")
     df_ads["Investimento"] = pd.to_numeric(df_ads["Gasto"].astype(str).str.replace(",", "."), errors="coerce")
     df_ads = df_ads[["Data", "Investimento"]].dropna()
 
@@ -26,8 +26,8 @@ df, df_ads = load_data()
 
 # 🎯 Filtro de datas
 st.sidebar.header("📅 Filtro de Período")
-data_min = df["DATA INICIAL"].min()
-data_max = df["DATA INICIAL"].max()
+data_min = df["DATA INICIAL"].min().date()
+data_max = df["DATA INICIAL"].max().date()
 
 data_range = st.sidebar.date_input(
     "Selecionar intervalo:",
@@ -36,30 +36,32 @@ data_range = st.sidebar.date_input(
     max_value=data_max
 )
 
-if not isinstance(data_range, tuple) or len(data_range) != 2:
+if isinstance(data_range, tuple) and len(data_range) == 2:
+    data_inicial, data_final = data_range
+else:
     st.error("Selecione um intervalo de datas válido.")
     st.stop()
 
-data_inicial, data_final = data_range
-
 # 🔍 Filtra por intervalo de datas
-df_filtrado = df[(df["DATA INICIAL"] >= pd.to_datetime(data_inicial)) & (df["DATA INICIAL"] <= pd.to_datetime(data_final))].copy()
-df_ads_filtrado = df_ads[(df_ads["Data"] >= pd.to_datetime(data_inicial)) & (df_ads["Data"] <= pd.to_datetime(data_final))].copy()
+df_filtrado = df[
+    (df["DATA INICIAL"].dt.date >= data_inicial) &
+    (df["DATA INICIAL"].dt.date <= data_final)
+].copy()
+df_ads_filtrado = df_ads[
+    (df_ads["Data"].dt.date >= data_inicial) &
+    (df_ads["Data"].dt.date <= data_final)
+].copy()
 
 # Força datas como string para merge
-df_filtrado["Data"] = df_filtrado["DATA INICIAL"].dt.strftime("%Y-%m-%d")
-df_ads_filtrado["Data"] = df_ads_filtrado["Data"].dt.strftime("%Y-%m-%d")
+df_filtrado.loc[:, "Data"] = df_filtrado["DATA INICIAL"].dt.strftime("%Y-%m-%d")
+df_ads_filtrado.loc[:, "Data"] = df_ads_filtrado["Data"].dt.strftime("%Y-%m-%d")
 
 # Agrupamento de abandonos por dia
-abandonos_dia = (
-    df_filtrado.groupby("Data")
-    .size()
-    .reset_index(name="Abandonos")
-)
+abandonos_dia = df_filtrado.groupby("Data").size().reset_index(name="Abandonos")
 
-# Merge corrigido com datas como string
+# Merge e ajuste para datetime
 dados_merged = pd.merge(df_ads_filtrado, abandonos_dia, on="Data", how="left").fillna({"Abandonos": 0})
-dados_merged["Data"] = pd.to_datetime(dados_merged["Data"])  # volta pra datetime para gráfico
+dados_merged["Data"] = pd.to_datetime(dados_merged["Data"])
 
 # 📊 KPIs
 valor_total = df_filtrado["VALOR"].sum()
