@@ -36,12 +36,19 @@ st.sidebar.header("📅 Filtro de Período")
 data_min = df["DATA INICIAL"].min()
 data_max = df["DATA INICIAL"].max()
 
-data_inicial, data_final = st.sidebar.date_input(
+datas = st.sidebar.date_input(
     "Selecionar intervalo:",
     [data_min, data_max],
     min_value=data_min,
     max_value=data_max
 )
+
+# ✅ Garante que o intervalo seja válido
+if isinstance(datas, tuple) and len(datas) == 2:
+    data_inicial, data_final = datas
+else:
+    st.error("Por favor, selecione um intervalo de datas válido.")
+    st.stop()
 
 # 🔍 Filtragem
 df_filtrado = df[
@@ -71,10 +78,8 @@ st.divider()
 # 📈 Gráfico: Abandonos por Dia
 st.subheader("📅 Carrinhos Abandonados por Dia")
 
-# Garante consistência: transforma em datetime (sem hora), depois converte para string no formato desejado
 df_filtrado["DataFormatada"] = pd.to_datetime(df_filtrado["DATA INICIAL"].dt.date)
 
-# Agrupa de forma segura
 abandonos_dia = (
     df_filtrado.groupby("DataFormatada")
     .size()
@@ -92,7 +97,6 @@ fig = px.bar(
     color_discrete_sequence=["#1f77b4"]
 )
 
-
 fig.update_traces(textposition="outside")
 fig.update_layout(
     xaxis_tickformat="%d/%m",
@@ -108,11 +112,9 @@ st.plotly_chart(fig, use_container_width=True)
 # 💸 Investimento Diário
 st.subheader("💸 Investimento Diário em Anúncios (Meta Ads)")
 
-# Garante que a coluna seja datetime (sem hora) e depois convertida para date puro
 df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"]).dt.date
-df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"])  # volta para Timestamp p/ consistência
+df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"])
 
-# Agrupa investimento por data
 investimento_por_dia = (
     df_ads_filtrado
     .groupby("Data")["Investimento"]
@@ -121,7 +123,6 @@ investimento_por_dia = (
     .sort_values("Data")
 )
 
-# Gráfico com datas formatadas como string (para evitar duplicações visuais)
 fig_invest = px.line(
     investimento_por_dia,
     x=investimento_por_dia["Data"].dt.strftime("%d/%m"),
@@ -139,13 +140,6 @@ fig_invest.update_layout(
 
 st.plotly_chart(fig_invest, use_container_width=True)
 
-
-# 💰 Simulador de recuperação
-st.subheader("📊 Simulador de Receita Recuperável")
-meta = st.slider("Taxa de recuperação esperada (%)", 0, 100, 25, step=5)
-valor_recuperado = valor_total * (meta / 100)
-st.success(f"🔄 Recuperando {meta}% → **R$ {valor_recuperado:,.2f}**")
-
 # 🥧 Etapas de abandono
 st.subheader("🥧 Distribuição das Etapas de Abandono")
 etapas = df_filtrado["ABANDONOU EM"].value_counts().reset_index()
@@ -153,6 +147,12 @@ etapas.columns = ["Etapa", "Quantidade"]
 fig_pie = px.pie(etapas, names="Etapa", values="Quantidade", hole=0.4)
 fig_pie.update_traces(textinfo="percent+label")
 st.plotly_chart(fig_pie, use_container_width=True)
+
+# 💰 Simulador de recuperação
+st.subheader("📊 Simulador de Receita Recuperável")
+meta = st.slider("Taxa de recuperação esperada (%)", 0, 100, 25, step=5)
+valor_recuperado = valor_total * (meta / 100)
+st.success(f"🔄 Recuperando {meta}% → **R$ {valor_recuperado:,.2f}**")
 
 # 🧠 Reflexão
 st.subheader("🧠 Perguntas Estratégicas para o Time de Marketing")
