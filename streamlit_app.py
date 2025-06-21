@@ -26,6 +26,11 @@ df, df_ads = load_data()
 
 # 🎯 Filtro de datas
 st.sidebar.header("📅 Filtro de Período")
+
+if df["DATA INICIAL"].empty:
+    st.error("Nenhuma data disponível para filtro.")
+    st.stop()
+
 data_min = df["DATA INICIAL"].min().date()
 data_max = df["DATA INICIAL"].max().date()
 
@@ -39,8 +44,9 @@ data_range = st.sidebar.date_input(
 if isinstance(data_range, tuple) and len(data_range) == 2:
     data_inicial, data_final = data_range
 else:
-    st.error("Selecione um intervalo de datas válido.")
-    st.stop()
+    st.warning("Selecione um intervalo válido. Exibindo todos os dados.")
+    data_inicial, data_final = data_min, data_max
+
 
 # 🔍 Filtra por intervalo de datas
 df_filtrado = df[
