@@ -8,6 +8,27 @@ st.set_page_config(page_title="Carrinhos Abandonados", layout="wide")
 csv_abandono_url = "https://docs.google.com/spreadsheets/d/1OBKs2RpmRNqHDn6xE3uMOU-bwwnO_JY1ZhqctZGpA3E/export?format=csv"
 csv_investimento_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m5Wq7YaTs3CKPmecLjB3lDyBTI/export?format=csv"
 
+def extrair_investimento(csv_url):
+    df_raw = pd.read_csv(csv_url, header=None)
+
+    # Extrai data de B2
+    data_str = df_raw.iloc[1, 1]
+    data = pd.to_datetime(data_str, dayfirst=True, errors="coerce")
+
+    # Extrai valor total de onde a coluna A for "TOTAL"
+    linha_total = df_raw[df_raw[0].astype(str).str.upper().str.strip() == "TOTAL"]
+    if not linha_total.empty:
+        valor_raw = linha_total.iloc[0, 2]
+        valor = str(valor_raw).replace("R$", "").replace(",", ".").strip()
+        valor_float = float(valor)
+    else:
+        valor_float = 0.0
+
+    return pd.DataFrame({
+        "Data": [data],
+        "Investimento": [valor_float]
+    })
+
 @st.cache_data
 def load_data():
     df_abandono = pd.read_csv(csv_abandono_url)
@@ -15,13 +36,7 @@ def load_data():
     df_abandono["VALOR"] = df_abandono["VALOR"].astype(str).str.replace(",", ".").astype(float)
     df_abandono.dropna(subset=["DATA INICIAL", "VALOR", "ABANDONOU EM"], inplace=True)
 
-    df_invest = pd.read_csv(csv_investimento_url)
-    st.write("Colunas do df_invest:", df_invest.columns.tolist())
-    df_invest.columns = df_invest.columns.str.strip()  # Remove espaços invisíveis
-    df_invest["Data"] = pd.to_datetime(df_invest["Data"], errors="coerce")
-    df_invest["Investimento"] = df_invest["Investimento"].astype(str).str.replace(",", ".").astype(float)
-
-    df_invest = df_invest[["Data", "Investimento"]].dropna()
+    df_invest = extrair_investimento(csv_investimento_url)
 
     return df_abandono, df_invest
 
