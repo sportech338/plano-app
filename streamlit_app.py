@@ -10,13 +10,11 @@ csv_base_dados_url = "https://docs.google.com/spreadsheets/d/1JYHDnY8ykyklYELm2m
 
 @st.cache_data
 def load_data():
-    # 🛒 Dados de carrinhos abandonados
     df_abandono = pd.read_csv(csv_abandono_url)
     df_abandono["DATA INICIAL"] = pd.to_datetime(df_abandono["DATA INICIAL"], dayfirst=True, errors="coerce")
     df_abandono["VALOR"] = df_abandono["VALOR"].astype(str).str.replace(",", ".").astype(float)
     df_abandono.dropna(subset=["DATA INICIAL", "VALOR", "ABANDONOU EM"], inplace=True)
 
-    # 📊 Dados de investimento diário da aba 'Base de dados'
     df_ads = pd.read_csv(csv_base_dados_url, names=["Data", "Gasto"], header=None)
     df_ads["Data"] = pd.to_datetime(df_ads["Data"], dayfirst=True, errors="coerce")
     df_ads["Investimento"] = pd.to_numeric(df_ads["Gasto"].astype(str).str.replace(",", "."), errors="coerce")
@@ -26,7 +24,7 @@ def load_data():
 
 df, df_ads = load_data()
 
-# 🎯 Filtro de período
+# 🎯 Filtro de datas
 st.sidebar.header("📅 Filtro de Período")
 data_min = df["DATA INICIAL"].min()
 data_max = df["DATA INICIAL"].max()
@@ -44,9 +42,24 @@ if not isinstance(data_range, tuple) or len(data_range) != 2:
 
 data_inicial, data_final = data_range
 
-# 🔍 Filtragem dos dados
-df_filtrado = df[(df["DATA INICIAL"] >= pd.to_datetime(data_inicial)) & (df["DATA INICIAL"] <= pd.to_datetime(data_final))]
-df_ads_filtrado = df_ads[(df_ads["Data"] >= pd.to_datetime(data_inicial)) & (df_ads["Data"] <= pd.to_datetime(data_final))]
+# 🔍 Filtra por intervalo de datas
+df_filtrado = df[(df["DATA INICIAL"] >= pd.to_datetime(data_inicial)) & (df["DATA INICIAL"] <= pd.to_datetime(data_final))].copy()
+df_ads_filtrado = df_ads[(df_ads["Data"] >= pd.to_datetime(data_inicial)) & (df_ads["Data"] <= pd.to_datetime(data_final))].copy()
+
+# Força datas como string para merge
+df_filtrado["Data"] = df_filtrado["DATA INICIAL"].dt.strftime("%Y-%m-%d")
+df_ads_filtrado["Data"] = df_ads_filtrado["Data"].dt.strftime("%Y-%m-%d")
+
+# Agrupamento de abandonos por dia
+abandonos_dia = (
+    df_filtrado.groupby("Data")
+    .size()
+    .reset_index(name="Abandonos")
+)
+
+# Merge corrigido com datas como string
+dados_merged = pd.merge(df_ads_filtrado, abandonos_dia, on="Data", how="left").fillna({"Abandonos": 0})
+dados_merged["Data"] = pd.to_datetime(dados_merged["Data"])  # volta pra datetime para gráfico
 
 # 📊 KPIs
 valor_total = df_filtrado["VALOR"].sum()
@@ -62,21 +75,8 @@ col3.metric("🛒 Total de Abandonos", total_abandonos)
 
 st.divider()
 
-# 📈 Gráfico: Abandonos por dia + Investimento
+# 📈 Gráfico: Abandonos vs Investimento
 st.subheader("📅 Abandonos vs Investimento Meta Ads")
-
-df_filtrado = df_filtrado.copy()
-df_filtrado["Data"] = df_filtrado["DATA INICIAL"].dt.date
-df_ads_filtrado = df_ads_filtrado.copy()
-df_ads_filtrado["Data"] = df_ads_filtrado["Data"].dt.date
-
-abandonos_dia = (
-    df_filtrado.groupby("Data")
-    .size()
-    .reset_index(name="Abandonos")
-)
-
-dados_merged = pd.merge(df_ads_filtrado, abandonos_dia, on="Data", how="left").fillna({"Abandonos": 0})
 
 fig = px.bar(
     dados_merged, x="Data", y="Abandonos", text="Abandonos",
@@ -115,14 +115,14 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-# 🥧 Distribuição das etapas
+# 🥧 Etapas de abandono
 st.subheader("🥧 Distribuição das Etapas de Abandono")
 etapas = df_filtrado["ABANDONOU EM"].value_counts().reset_index()
 etapas.columns = ["Etapa", "Quantidade"]
 fig_pie = px.pie(etapas, names="Etapa", values="Quantidade", hole=0.4)
 st.plotly_chart(fig_pie, use_container_width=True)
 
-# 💰 Simulador
+# 💰 Simulador de recuperação
 st.subheader("📊 Simulador de Receita Recuperável")
 meta = st.slider("Taxa de recuperação esperada (%)", 0, 100, 25, step=5)
 valor_recuperado = valor_total * (meta / 100)
