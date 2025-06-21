@@ -37,19 +37,17 @@ data_min = df["DATA INICIAL"].min()
 data_max = df["DATA INICIAL"].max()
 
 datas = st.sidebar.date_input(
-    "Selecionar intervalo ou dia único:",
+    "Selecionar intervalo:",
     [data_min, data_max],
     min_value=data_min,
     max_value=data_max
 )
 
-# ✅ Ajuste para aceitar 1 ou 2 datas
+# ✅ Garante que o intervalo seja válido
 if isinstance(datas, tuple) and len(datas) == 2:
     data_inicial, data_final = datas
-elif isinstance(datas, pd.Timestamp):
-    data_inicial = data_final = datas
 else:
-    st.error("Por favor, selecione uma ou duas datas válidas.")
+    st.error("Por favor, selecione um intervalo de datas válido.")
     st.stop()
 
 # 🔍 Filtragem
@@ -79,6 +77,7 @@ st.divider()
 
 # 📈 Gráfico: Abandonos por Dia
 st.subheader("📅 Carrinhos Abandonados por Dia")
+
 df_filtrado["DataFormatada"] = pd.to_datetime(df_filtrado["DATA INICIAL"].dt.date)
 
 abandonos_dia = (
@@ -172,14 +171,20 @@ st.download_button(
     mime="text/csv"
 )
 
-# 🎯 Metas Estratégicas com base na Etapa com Maior Abandono
-st.subheader("🎯 Metas Baseadas na Etapa com Maior Abandono")
+# 🎯 Metas Estratégicas com Base nos Dados
+st.subheader("🎯 Metas Baseadas em Análise de Funil")
+st.markdown("Atualize abaixo o status das principais metas, focadas nas etapas com maior abandono:")
 
-if not df_filtrado.empty:
-    etapa_critica = df_filtrado["ABANDONOU EM"].value_counts().idxmax()
-    st.warning(f"⚠️ Etapa com maior abandono: **{etapa_critica}**")
-else:
-    st.warning("Sem dados para o período selecionado.")
+with st.expander("💳 Reduzir abandono na etapa de pagamento (etapa mais crítica)"):
+    status_pagamento = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_pagamento")
+    st.markdown("""
+    **Plano de Ação:**
+    - Reduzir campos desnecessários no checkout  
+    - Oferecer opções como Pix, boleto, 1-clique  
+    - Inserir selos de segurança visíveis
+    """)
+    ideias_pagamento = st.text_area("💡 Ideias do time:", key="ideia_pagamento")
+    st.info(f"Status atual: {status_pagamento}")
 
 with st.expander("🧾 Melhorar taxa de conclusão na etapa de dados pessoais"):
     status_dados = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_dados")
@@ -189,20 +194,8 @@ with st.expander("🧾 Melhorar taxa de conclusão na etapa de dados pessoais"):
     - Permitir login com Google/Meta  
     - Usar preenchimento automático
     """)
-    st.text_area("💡 Ideias do time:", key="ideia_dados")
+    ideias_dados = st.text_area("💡 Ideias do time:", key="ideia_dados")
     st.info(f"Status atual: {status_dados}")
-
-
-with st.expander("💳 Reduzir abandono na etapa de pagamento"):
-    status_pagamento = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_pagamento")
-    st.markdown("""
-    **Plano de Ação:**
-    - Reduzir campos desnecessários no checkout  
-    - Oferecer opções como Pix, boleto, 1-clique  
-    - Inserir selos de segurança visíveis
-    """)
-    st.text_area("💡 Ideias do time:", key="ideia_pagamento")
-    st.info(f"Status atual: {status_pagamento}")
 
 with st.expander("💰 Aumentar ticket médio com combos"):
     status_combos = st.radio("Status:", ["❌ Não iniciado", "🔄 Em andamento", "✅ Concluído"], key="meta_combos")
@@ -212,7 +205,7 @@ with st.expander("💰 Aumentar ticket médio com combos"):
     - Sugerir upsell no checkout  
     - Testar combos sazonais com desconto
     """)
-    st.text_area("💡 Ideias do time:", key="ideia_combos")
+    ideias_combos = st.text_area("💡 Ideias do time:", key="ideia_combos")
     st.info(f"Status atual: {status_combos}")
 
 with st.expander("📞 Recuperar 25% dos abandonos com remarketing"):
@@ -223,5 +216,5 @@ with st.expander("📞 Recuperar 25% dos abandonos com remarketing"):
     - Retargeting com Meta Ads e e-mail  
     - Criar urgência com prazos ou bônus
     """)
-    st.text_area("💡 Ideias do time:", key="ideia_recuperacao")
+    ideias_recuperacao = st.text_area("💡 Ideias do time:", key="ideia_recuperacao")
     st.info(f"Status atual: {status_recuperacao}")
