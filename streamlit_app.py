@@ -115,6 +115,10 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
+# 🔎 Debug opcional
+with st.expander("📋 Dados combinados (debug)"):
+    st.dataframe(dados_merged)
+
 # 🥧 Etapas de abandono
 st.subheader("🥧 Distribuição das Etapas de Abandono")
 etapas = df_filtrado["ABANDONOU EM"].value_counts().reset_index()
