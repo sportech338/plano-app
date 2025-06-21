@@ -116,19 +116,23 @@ st.plotly_chart(fig_pie, use_container_width=True)
 # 💸 Investimento Diário
 st.subheader("💸 Investimento Diário em Anúncios (Meta Ads)")
 
-# Garante que a coluna esteja no formato date puro
-df_ads_filtrado["Data"] = df_ads_filtrado["Data"].dt.date
+# Garante que a coluna seja datetime (sem hora) e depois convertida para date puro
+df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"]).dt.date
+df_ads_filtrado["Data"] = pd.to_datetime(df_ads_filtrado["Data"])  # volta para Timestamp p/ consistência
 
-# Agrupa por data (caso tenha mais de uma linha por dia)
-investimento_por_dia = df_ads_filtrado.groupby("Data")["Investimento"].sum().reset_index()
+# Agrupa investimento por data
+investimento_por_dia = (
+    df_ads_filtrado
+    .groupby("Data")["Investimento"]
+    .sum()
+    .reset_index()
+    .sort_values("Data")
+)
 
-# Ordena as datas (garante visualização correta no gráfico)
-investimento_por_dia.sort_values("Data", inplace=True)
-
-# Gráfico corrigido
+# Gráfico com datas formatadas como string (para evitar duplicações visuais)
 fig_invest = px.line(
     investimento_por_dia,
-    x="Data",
+    x=investimento_por_dia["Data"].dt.strftime("%d/%m"),
     y="Investimento",
     markers=True,
     title="📈 Investimento por Dia",
@@ -136,7 +140,6 @@ fig_invest = px.line(
 )
 
 fig_invest.update_layout(
-    xaxis_tickformat="%d/%m",
     template="simple_white",
     height=400,
     margin=dict(t=50, b=40, l=0, r=0)
